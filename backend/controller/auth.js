@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/authmodel");
 const bcrypt = require("bcrypt");
-const { SendOtp } = require("../utils/otpService");
 
 exports.register = async (req, res, next) => {
   try {
@@ -10,16 +9,16 @@ exports.register = async (req, res, next) => {
     if (!name || !email || !phonenumber || !password) {
       return res.status(400).json({
         success: false,
-        error: "All required fields must be proveded.",
+        error: "Name, email, phone number and password are required.",
       });
     }
 
-    const user = await User.checkUserByEmail(email);
+    const existingUser = await User.checkUserByEmail(email);
 
-    if (user && user.error) {
+    if (existingUser && existingUser.error) {
       return res.status(409).json({
         success: false,
-        error: user.error,
+        error: existingUser.error,
       });
     }
 
@@ -40,147 +39,30 @@ exports.register = async (req, res, next) => {
         });
       }
 
+      if (result.message && result.message.includes("users_email_key")) {
+        return res.status(409).json({
+          success: false,
+          error: "Email is already registered.",
+        });
+      }
+
       return res.status(500).json({
         success: false,
         error: "Failed to register user. Please try again.",
       });
     }
 
-    const userId = String(result._id);
-
-    const verifyToken = await jwt.sign(
-      {
-        id: userId,
-        email: email,
-      },
-      process.env.SECRET_KEY,
-      {
-        expiresIn: "5m",
-      },
-    );
-
-    res.cookie("verifytoken", verifyToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 5 * 60 * 1000,
-    });
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message:
-        " User registered successfully. Please verify your account using the OTP sent to your email.",
+      message: "User registered successfully.",
       user: {
-        id: userId,
-        email: result.email,
+        id: String(result._id),
         name: result.name,
+        email: result.email,
+        phonenumber: result.phonenumber,
+        auth_provider: result.auth_provider,
       },
-      verifyToken,
     });
-
-    SendOtp({ email }).catch((err) =>
-      console.log("sending otp error(register):", err),
-    );
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.varifyUser = async (req, res, next) => {
-  try {
-    const otp = req.body.otp;
-    const email = req.email;
-
-    const user = await User.getUserByEmail(email);
-
-    if (user.error) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found.",
-      });
-    }
-
-    if (user.otp !== otp) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid OTP. Please enter again.",
-      });
-    }
-
-    if (new Date() > new Date(user.otp_expire_at)) {
-      return res.status(400).json({
-        success: false,
-        error: "OTP has expired.Please requrst a new one.",
-      });
-    }
-
-    const updateUser = await User.verifyUser(email);
-
-    if (updateUser.error) {
-      return res.status(500).json({
-        success: false,
-        error: "Failed to verify user.Please try again.",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Account verified successfully. You may now log in",
-      user: updateUser,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.resendOtp = async (req, res, next) => {
-  try {
-    const email = req.body.email;
-    const id = req.id;
-
-    const user = await User.checkUserByEmail(email);
-
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        error: "User not Registered.Please register",
-      });
-    }
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: "Email is required to resend OTP.",
-      });
-    }
-
-    const verifyToken = await jwt.sign(
-      {
-        id: id,
-        email: email,
-      },
-      process.env.SECRET_KEY,
-      {
-        expiresIn: "5m",
-      },
-    );
-
-    res.cookie("verifytoken", verifyToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 5 * 60 * 1000,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "OTP has been sent to your registered email.",
-      user: req.email,
-    });
-
-    SendOtp({ email }).catch((err) =>
-      console.error("OTP error (resend):", err.message),
-    );
   } catch (err) {
     next(err);
   }
@@ -190,42 +72,14 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const result = await User.login(email, password);
-
-    if (result?.user && result.user.is_verified === false) {
-      SendOtp({ email }).catch((err) =>
-        console.error("OTP error (login):", err.message),
-      );
-
-      const userId = String(result.user._id);
-
-      const verifyToken = await jwt.sign(
-        {
-          id: userId,
-          email: email,
-        },
-        process.env.SECRET_KEY,
-        {
-          expiresIn: "5m",
-        },
-      );
-
-      res.cookie("verifytoken", verifyToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 5 * 60 * 1000,
-      });
-
-      return res.status(403).json({
+    if (!email || !password) {
+      return res.status(400).json({
         success: false,
-        redirect: "/verify-otp",
-        message: "Account not verified. OTP sent again to " + email + ".",
-        user: {
-          email: result.user.email,
-        },
+        error: "Email and password are required.",
       });
     }
+
+    const result = await User.login(email, password);
 
     if (result?.error) {
       return res.status(401).json({
@@ -234,12 +88,19 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    if (!result?.user) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid login credentials.",
+      });
+    }
+
     const userId = String(result.user._id);
 
     const token = jwt.sign(
       {
         id: userId,
-        email,
+        email: result.user.email,
       },
       process.env.SECRET_KEY,
       {
@@ -250,7 +111,7 @@ exports.login = async (req, res, next) => {
     const refreshToken = jwt.sign(
       {
         id: userId,
-        email,
+        email: result.user.email,
       },
       process.env.REFRESH_KEY,
       {
@@ -258,25 +119,33 @@ exports.login = async (req, res, next) => {
       },
     );
 
-    res.cookie("token", token, {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    };
+
+    res.cookie("token", token, {
+      ...cookieOptions,
       maxAge: 2 * 60 * 60 * 1000,
     });
 
     res.cookie("refreshtoken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Login successful",
-      email: result.user.email,
-      name: result.user.name,
+      message: "Login successful.",
+      user: {
+        id: userId,
+        name: result.user.name,
+        email: result.user.email,
+        auth_provider: result.user.auth_provider,
+      },
     });
   } catch (err) {
     next(err);
@@ -285,28 +154,28 @@ exports.login = async (req, res, next) => {
 
 exports.forgetpassword = async (req, res, next) => {
   try {
-    const { email, newpassword, confirm, otp } = req.body;
+    const { email, newpassword, confirm } = req.body;
 
-    if (newpassword !== confirm || !email) {
+    if (!email || !newpassword || !confirm) {
       return res.status(400).json({
         success: false,
-        error: "Email and password confirmation do not match.",
+        error: "Email, new password and confirmation are required.",
+      });
+    }
+
+    if (newpassword !== confirm) {
+      return res.status(400).json({
+        success: false,
+        error: "New password and confirmation do not match.",
       });
     }
 
     const user = await User.getUserByEmail(email);
 
-    if (user.error) {
+    if (!user || user.error) {
       return res.status(404).json({
         success: false,
         error: "User not found.",
-      });
-    }
-
-    if (user.otp !== otp) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid OTP. Please enter again.",
       });
     }
 
@@ -317,17 +186,16 @@ exports.forgetpassword = async (req, res, next) => {
       email,
     });
 
-    if (updatepass.error) {
+    if (!updatepass || updatepass.error) {
       return res.status(500).json({
         success: false,
         error: "Failed to reset password. Please try again.",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Password has been reset successfully.",
-      User_email: email,
     });
   } catch (err) {
     next(err);
@@ -336,11 +204,27 @@ exports.forgetpassword = async (req, res, next) => {
 
 exports.resetpassword = async (req, res, next) => {
   try {
-    const { oldpassword, newpassword, email } = req.body;
+    const { oldpassword, newpassword } = req.body;
+
+    const email = req.email;
+
+    if (!oldpassword || !newpassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Old password and new password are required.",
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "Authenticated email not found.",
+      });
+    }
 
     const user = await User.getUserByEmail(email);
 
-    if (user.error) {
+    if (!user || user.error) {
       return res.status(404).json({
         success: false,
         error: "User not found.",
@@ -351,6 +235,7 @@ exports.resetpassword = async (req, res, next) => {
 
     if (!isMatch) {
       return res.status(400).json({
+        success: false,
         error: "The current password you entered is incorrect.",
       });
     }
@@ -362,15 +247,16 @@ exports.resetpassword = async (req, res, next) => {
       email,
     });
 
-    if (resetpass.error) {
+    if (!resetpass || resetpass.error) {
       return res.status(500).json({
-        error: "Failed to change password.please try again.",
+        success: false,
+        error: "Failed to change password. Please try again.",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "Password updated successfully.",
-      user: resetpass,
     });
   } catch (err) {
     next(err);
@@ -379,88 +265,79 @@ exports.resetpassword = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    });
+    const isProduction = process.env.NODE_ENV === "production";
 
-    res.clearCookie("refreshtoken", {
+    const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    });
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    };
 
-    res.status(200).json({
+    res.clearCookie("token", cookieOptions);
+
+    res.clearCookie("refreshtoken", cookieOptions);
+
+    return res.status(200).json({
       success: true,
-      message: "logged out successfully",
+      message: "Logged out successfully.",
     });
   } catch (err) {
-    console.error(err.stack);
     next(err);
   }
 };
 
 exports.verify = async (req, res) => {
-  try {
-    res.status(200).json({
-      success: true,
-      email: req.email,
-      message: "Token is valid",
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    email: req.email,
+    userId: req.id,
+    message: "Token is valid.",
+  });
 };
 
 exports.refreshToken = async (req, res, next) => {
   try {
-    const refreshtoken = req.cookies?.refreshtoken;
+    const refreshToken = req.cookies?.refreshtoken;
 
-    if (!refreshtoken) {
-      return res.status(400).json({
+    if (!refreshToken) {
+      return res.status(401).json({
         success: false,
         error: "Refresh token is required.",
       });
     }
 
-    const decode = jwt.verify(refreshtoken, process.env.REFRESH_KEY);
-
-    if (!decode) {
-      return res.status(401).json({
-        success: false,
-        error: "invalid or expired token.",
-      });
-    }
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_KEY);
 
     const newToken = jwt.sign(
       {
-        id: decode.id,
-        email: decode.email,
+        id: decoded.id,
+        email: decoded.email,
       },
       process.env.SECRET_KEY,
       {
-        expiresIn: "2m",
+        expiresIn: "2h",
       },
     );
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", newToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 2 * 60 * 1000,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 2 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Access token refreshed successfully.",
     });
   } catch (err) {
-    console.log("Refresh Error:", err.stack);
-    next(err);
+    console.error("Refresh token error:", err.message);
+
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired refresh token.",
+    });
   }
 };

@@ -4,7 +4,11 @@ const bcrypt = require("bcrypt");
 const User = {
   checkUserByEmail: async (email) => {
     try {
-      const user = await UserModel.findOne({ email });
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const user = await UserModel.findOne({
+        email: normalizedEmail,
+      });
 
       if (user) {
         return {
@@ -24,7 +28,11 @@ const User = {
 
   getUserByEmail: async (email) => {
     try {
-      const user = await UserModel.findOne({ email });
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const user = await UserModel.findOne({
+        email: normalizedEmail,
+      });
 
       if (!user) {
         return {
@@ -44,7 +52,9 @@ const User = {
 
   getUserByGoogleId: async (google_id) => {
     try {
-      const user = await UserModel.findOne({ google_id });
+      const user = await UserModel.findOne({
+        google_id,
+      });
 
       if (!user) {
         return null;
@@ -64,9 +74,10 @@ const User = {
     try {
       const user = await UserModel.create({
         name,
-        email,
+        email: email.trim().toLowerCase(),
         phonenumber,
         password,
+        auth_provider: "LOCAL",
       });
 
       return user;
@@ -95,15 +106,15 @@ const User = {
       };
     }
   },
+
   createGoogleUser: async ({ name, email, google_id, profile_picture }) => {
     try {
       const user = await UserModel.create({
         name,
-        email,
+        email: email.trim().toLowerCase(),
         google_id,
         profile_picture,
         auth_provider: "GOOGLE",
-        is_verified: true,
       });
 
       return user;
@@ -140,76 +151,23 @@ const User = {
     }
   },
 
-  verifyUser: async (email) => {
-    try {
-      const user = await UserModel.findOneAndUpdate(
-        { email },
-        {
-          $set: {
-            is_verified: true,
-            otp: null,
-            otp_expire_at: null,
-          },
-        },
-        {
-          new: true,
-        },
-      );
-
-      if (!user) {
-        return {
-          error: true,
-        };
-      }
-
-      return user;
-    } catch (err) {
-      console.error("verifyUser error:", err);
-
-      return {
-        error: true,
-      };
-    }
-  },
-
-  updateOtp: async ({ email, otp, otp_expire_at }) => {
-    try {
-      const user = await UserModel.findOneAndUpdate(
-        { email },
-        {
-          $set: {
-            otp,
-            otp_expire_at,
-          },
-        },
-        {
-          new: true,
-        },
-      );
-
-      if (!user) {
-        return {
-          error: true,
-        };
-      }
-
-      return user;
-    } catch (err) {
-      console.error("updateOtp error:", err);
-
-      return {
-        error: true,
-      };
-    }
-  },
-
   login: async (email, password) => {
     try {
-      const user = await UserModel.findOne({ email });
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const user = await UserModel.findOne({
+        email: normalizedEmail,
+      });
 
       if (!user) {
         return {
           error: "No account found with this email. Please register first.",
+        };
+      }
+
+      if (!user.password) {
+        return {
+          error: "This account uses Google login. Please continue with Google.",
         };
       }
 
@@ -221,21 +179,9 @@ const User = {
         };
       }
 
-      if (user.is_verified === false) {
-        return {
-          user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            is_verified: false,
-          },
-          error: "User not verified. Please verify your account.",
-        };
-      }
-
       return {
-        message: "login successfull",
-        user: user,
+        message: "Login successful",
+        user,
       };
     } catch (err) {
       console.error("login error:", err);
@@ -249,8 +195,12 @@ const User = {
 
   resetPassword: async ({ newpassword, email }) => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       const user = await UserModel.findOneAndUpdate(
-        { email },
+        {
+          email: normalizedEmail,
+        },
         {
           $set: {
             password: newpassword,
