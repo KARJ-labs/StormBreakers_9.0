@@ -1,6 +1,6 @@
 const marketService = require("../services/marketService");
 
-const getQuote = async (req, res) => {
+const getQuote = async (req, res, next) => {
   try {
     const { symbol } = req.params;
 
@@ -11,29 +11,29 @@ const getQuote = async (req, res) => {
       });
     }
 
-    const quote = await marketService.getQuote(symbol);
+    const data = await marketService.getQuote(symbol);
 
     return res.status(200).json({
       success: true,
-      data: quote,
+      data,
     });
   } catch (error) {
-    console.error("Get market quote error:", error.message);
+    console.error("Get quote error:", error.message);
 
     return res.status(502).json({
       success: false,
-      error: "Unable to fetch market data.",
+      error: "Unable to fetch stock quote.",
     });
   }
 };
 
-const getMarketOverview = async (req, res) => {
+const getMarketOverview = async (req, res, next) => {
   try {
-    const overview = await marketService.getMarketOverview();
+    const data = await marketService.getMarketOverview();
 
     return res.status(200).json({
       success: true,
-      data: overview,
+      data,
     });
   } catch (error) {
     console.error("Get market overview error:", error.message);
@@ -45,43 +45,43 @@ const getMarketOverview = async (req, res) => {
   }
 };
 
-const getCompanies = async (req, res) => {
+const getCompanies = async (req, res, next) => {
   try {
-    const companies = await marketService.getCompanies();
+    const data = await marketService.getCompanies();
 
     return res.status(200).json({
       success: true,
-      data: companies,
+      data,
     });
   } catch (error) {
     console.error("Get companies error:", error.message);
 
     return res.status(502).json({
       success: false,
-      error: "Unable to fetch companies.",
+      error: "Unable to fetch company list.",
     });
   }
 };
 
-const getTrendingCompanies = async (req, res) => {
+const getTrending = async (req, res, next) => {
   try {
-    const companies = await marketService.getTrendingCompanies();
+    const data = await marketService.getTrending();
 
     return res.status(200).json({
       success: true,
-      data: companies,
+      data,
     });
   } catch (error) {
-    console.error("Get trending companies error:", error.message);
+    console.error("Get trending stocks error:", error.message);
 
     return res.status(502).json({
       success: false,
-      error: "Unable to fetch trending companies.",
+      error: "Unable to fetch trending stocks.",
     });
   }
 };
 
-const searchCompanies = async (req, res) => {
+const searchCompanies = async (req, res, next) => {
   try {
     const { q } = req.query;
 
@@ -92,11 +92,11 @@ const searchCompanies = async (req, res) => {
       });
     }
 
-    const companies = await marketService.searchCompanies(q);
+    const data = await marketService.searchCompanies(q);
 
     return res.status(200).json({
       success: true,
-      data: companies,
+      data,
     });
   } catch (error) {
     console.error("Search companies error:", error.message);
@@ -108,7 +108,7 @@ const searchCompanies = async (req, res) => {
   }
 };
 
-const getHistoricalData = async (req, res) => {
+const getHistoricalData = async (req, res, next) => {
   try {
     const { symbol } = req.params;
     const { resolution, from, to } = req.query;
@@ -127,7 +127,7 @@ const getHistoricalData = async (req, res) => {
       });
     }
 
-    const historicalData = await marketService.getHistoricalData(
+    const data = await marketService.getHistoricalData(
       symbol,
       resolution || "D",
       from,
@@ -136,7 +136,7 @@ const getHistoricalData = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: historicalData,
+      data,
     });
   } catch (error) {
     console.error("Get historical market data error:", error.message);
@@ -152,7 +152,7 @@ module.exports = {
   getQuote,
   getMarketOverview,
   getCompanies,
-  getTrendingCompanies,
+  getTrending,
   searchCompanies,
   getHistoricalData,
 };

@@ -11,11 +11,11 @@ const getCompanyDetails = async (req, res) => {
       });
     }
 
-    const company = await companyService.getCompanyDetails(symbol);
+    const data = await companyService.getCompanyDetails(symbol);
 
     return res.status(200).json({
       success: true,
-      data: company,
+      data,
     });
   } catch (error) {
     console.error("Get company details error:", error.message);
@@ -38,11 +38,11 @@ const getCompanyMetrics = async (req, res) => {
       });
     }
 
-    const metrics = await companyService.getCompanyMetrics(symbol);
+    const data = await companyService.getCompanyMetrics(symbol);
 
     return res.status(200).json({
       success: true,
-      data: metrics,
+      data,
     });
   } catch (error) {
     console.error("Get company metrics error:", error.message);
@@ -57,6 +57,7 @@ const getCompanyMetrics = async (req, res) => {
 const getCompanyHistory = async (req, res) => {
   try {
     const { symbol } = req.params;
+
     const { resolution, from, to } = req.query;
 
     if (!symbol) {
@@ -73,7 +74,7 @@ const getCompanyHistory = async (req, res) => {
       });
     }
 
-    const history = await companyService.getCompanyHistory(
+    const data = await companyService.getCompanyHistory(
       symbol,
       resolution || "D",
       from,
@@ -82,7 +83,7 @@ const getCompanyHistory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: history,
+      data,
     });
   } catch (error) {
     console.error("Get company history error:", error.message);
@@ -105,11 +106,11 @@ const getCompanyRisk = async (req, res) => {
       });
     }
 
-    const risk = await companyService.getCompanyRisk(symbol);
+    const data = await companyService.getCompanyRisk(symbol);
 
     return res.status(200).json({
       success: true,
-      data: risk,
+      data,
     });
   } catch (error) {
     console.error("Get company risk error:", error.message);

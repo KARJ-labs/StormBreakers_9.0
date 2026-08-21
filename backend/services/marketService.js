@@ -1,6 +1,6 @@
 const marketApi = require("../config/marketApi");
 
-const DEFAULT_SYMBOLS = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"];
+const { getCachedCompany, setCachedCompany } = require("./cacheService");
 
 const getQuote = async (symbol) => {
   try {
@@ -9,6 +9,27 @@ const getQuote = async (symbol) => {
     }
 
     const normalizedSymbol = symbol.trim().toUpperCase();
+
+    const cachedCompany = await getCachedCompany(normalizedSymbol);
+
+    if (
+      cachedCompany &&
+      cachedCompany.market &&
+      typeof cachedCompany.market.currentPrice === "number"
+    ) {
+      return {
+        symbol: normalizedSymbol,
+        currentPrice: cachedCompany.market.currentPrice,
+        change: cachedCompany.market.change,
+        changePercent: cachedCompany.market.changePercent,
+        high: cachedCompany.market.high,
+        low: cachedCompany.market.low,
+        open: cachedCompany.market.open,
+        previousClose: cachedCompany.market.previousClose,
+        timestamp: cachedCompany.market.timestamp,
+        source: "cache",
+      };
+    }
 
     const response = await marketApi.get("/quote", {
       params: {
@@ -19,23 +40,32 @@ const getQuote = async (symbol) => {
     const data = response.data;
 
     if (!data || typeof data.c !== "number") {
-      throw new Error(`No valid market data found for ${normalizedSymbol}`);
+      throw new Error(`No quote data found for ${normalizedSymbol}`);
     }
+
+    const market = {
+      currentPrice: data.c,
+      change: data.d ?? null,
+      changePercent: data.dp ?? null,
+      high: data.h ?? null,
+      low: data.l ?? null,
+      open: data.o ?? null,
+      previousClose: data.pc ?? null,
+      timestamp: data.t ?? null,
+    };
+
+    await setCachedCompany(normalizedSymbol, {
+      market,
+    });
 
     return {
       symbol: normalizedSymbol,
-      currentPrice: data.c,
-      change: data.d,
-      changePercent: data.dp,
-      high: data.h,
-      low: data.l,
-      open: data.o,
-      previousClose: data.pc,
-      timestamp: data.t,
+      ...market,
+      source: "external-api",
     };
   } catch (error) {
     console.error(
-      `Market API error for ${symbol}:`,
+      `Quote API error for ${symbol}:`,
       error.response?.data || error.message,
     );
 
@@ -45,72 +75,97 @@ const getQuote = async (symbol) => {
 
 const getMarketOverview = async () => {
   try {
+    const symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"];
+
     const results = await Promise.all(
-      DEFAULT_SYMBOLS.map((symbol) => getQuote(symbol)),
+      symbols.map(async (symbol) => {
+        try {
+          const quote = await getQuote(symbol);
+
+          return {
+            symbol,
+            ...quote,
+          };
+        } catch (error) {
+          return {
+            symbol,
+            error: "Unable to fetch quote",
+          };
+        }
+      }),
     );
 
-    const validResults = results.filter(
-      (stock) => typeof stock.currentPrice === "number",
-    );
-
-    if (validResults.length === 0) {
-      throw new Error("No market data available");
-    }
-
-    const totalChange = validResults.reduce(
-      (sum, stock) => sum + (stock.changePercent || 0),
-      0,
-    );
-
-    const averageChangePercent = totalChange / validResults.length;
-
-    return {
-      marketStatus: "available",
-      averageChangePercent: Number(averageChangePercent.toFixed(2)),
-      totalCompanies: validResults.length,
-      companies: validResults,
-      generatedAt: new Date().toISOString(),
-    };
+    return results;
   } catch (error) {
-    console.error(
-      "Market overview error:",
-      error.response?.data || error.message,
-    );
+    console.error("Market overview error:", error.message);
 
-    throw new Error("Failed to fetch market overview");
+    throw error;
   }
 };
 
 const getCompanies = async () => {
   try {
-    const results = await Promise.all(
-      DEFAULT_SYMBOLS.map((symbol) => getQuote(symbol)),
-    );
+    const response = await marketApi.get("/stock/symbol", {
+      params: {
+        exchange: "US",
+      },
+    });
 
-    return results.filter(
-      (company) => typeof company.currentPrice === "number",
-    );
+    const data = response.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid company data received from market API");
+    }
+
+    return data.map((company) => ({
+      symbol: company.symbol,
+      description: company.description,
+      displaySymbol: company.displaySymbol,
+      type: company.type,
+      currency: company.currency,
+      exchange: company.exchange,
+    }));
   } catch (error) {
     console.error(
-      "Get companies error:",
+      "Companies API error:",
       error.response?.data || error.message,
     );
 
-    throw new Error("Failed to fetch companies");
+    throw error;
   }
 };
 
-const getTrendingCompanies = async () => {
+const getTrending = async () => {
   try {
-    const companies = await getCompanies();
+    const symbols = ["AAPL", "NVDA", "TSLA", "AMZN", "MSFT", "META", "GOOGL"];
 
-    return companies
-      .filter((company) => typeof company.changePercent === "number")
-      .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+    const results = await Promise.all(
+      symbols.map(async (symbol) => {
+        try {
+          const quote = await getQuote(symbol);
+
+          return {
+            symbol,
+            currentPrice: quote.currentPrice,
+            change: quote.change,
+            changePercent: quote.changePercent,
+          };
+        } catch (error) {
+          return null;
+        }
+      }),
+    );
+
+    return results
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          Math.abs(b.changePercent || 0) - Math.abs(a.changePercent || 0),
+      );
   } catch (error) {
-    console.error("Get trending companies error:", error.message);
+    console.error("Trending API error:", error.message);
 
-    throw new Error("Failed to fetch trending companies");
+    throw error;
   }
 };
 
@@ -120,21 +175,31 @@ const searchCompanies = async (query) => {
       throw new Error("Search query is required");
     }
 
-    const normalizedQuery = query.trim().toUpperCase();
+    const response = await marketApi.get("/search", {
+      params: {
+        q: query.trim(),
+      },
+    });
 
-    if (!normalizedQuery) {
-      throw new Error("Search query is required");
+    const data = response.data;
+
+    if (!data || !Array.isArray(data.result)) {
+      return [];
     }
 
-    const companies = await getCompanies();
-
-    return companies.filter((company) =>
-      company.symbol.includes(normalizedQuery),
-    );
+    return data.result.map((company) => ({
+      symbol: company.symbol,
+      description: company.description,
+      displaySymbol: company.displaySymbol,
+      type: company.type,
+    }));
   } catch (error) {
-    console.error("Search companies error:", error.message);
+    console.error(
+      "Company search API error:",
+      error.response?.data || error.message,
+    );
 
-    throw new Error("Failed to search companies");
+    throw error;
   }
 };
 
@@ -145,7 +210,7 @@ const getHistoricalData = async (symbol, resolution = "D", from, to) => {
     }
 
     if (!from || !to) {
-      throw new Error("From and to timestamps are required");
+      throw new Error("from and to timestamps are required");
     }
 
     const normalizedSymbol = symbol.trim().toUpperCase();
@@ -161,38 +226,28 @@ const getHistoricalData = async (symbol, resolution = "D", from, to) => {
 
     const data = response.data;
 
-    console.log("Finnhub historical response:", JSON.stringify(data, null, 2));
-
     if (!data || data.s !== "ok") {
       throw new Error(`Historical data unavailable for ${normalizedSymbol}`);
     }
 
-    if (
-      !Array.isArray(data.t) ||
-      !Array.isArray(data.o) ||
-      !Array.isArray(data.h) ||
-      !Array.isArray(data.l) ||
-      !Array.isArray(data.c) ||
-      !Array.isArray(data.v)
-    ) {
-      throw new Error(
-        `Invalid historical data received for ${normalizedSymbol}`,
-      );
-    }
+    const history = [];
 
-    const candles = data.t.map((timestamp, index) => ({
-      timestamp,
-      open: data.o[index],
-      high: data.h[index],
-      low: data.l[index],
-      close: data.c[index],
-      volume: data.v[index],
-    }));
+    for (let i = 0; i < data.t.length; i++) {
+      history.push({
+        timestamp: data.t[i],
+        open: data.o[i],
+        high: data.h[i],
+        low: data.l[i],
+        close: data.c[i],
+        volume: data.v[i],
+      });
+    }
 
     return {
       symbol: normalizedSymbol,
       resolution,
-      data: candles,
+      history,
+      source: "external-api",
     };
   } catch (error) {
     console.error(
@@ -208,7 +263,7 @@ module.exports = {
   getQuote,
   getMarketOverview,
   getCompanies,
-  getTrendingCompanies,
+  getTrending,
   searchCompanies,
   getHistoricalData,
 };
