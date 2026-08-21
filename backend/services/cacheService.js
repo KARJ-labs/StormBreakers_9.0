@@ -1,4 +1,4 @@
-const CompanyCache = require("../model/CompanyCache");
+const CompanyCache = require("../model/companyCache");
 
 const DEFAULT_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
