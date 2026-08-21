@@ -9,6 +9,7 @@ const authentication = require("./router/userAuth");
 const googleAuthRoutes = require("./router/googleAuthRouter");
 const marketRoutes = require("./router/marketRoutes");
 const companyRoutes = require("./router/companyRoutes");
+const watchlistRoutes = require("./router/watchlistRoutes");
 
 const app = express();
 
@@ -25,11 +26,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/api/auth", authentication);
-app.use("/api/auth", googleAuthRoutes);
+app.use("/api/v1/auth", authentication);
+app.use("/api/v1/auth", googleAuthRoutes);
 app.use("/api/v1/market", marketRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/profile", profileRoutes);
+app.use("/api/v1/watchlist", watchlistRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
