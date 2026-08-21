@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-
+const profileRoutes = require("./router/profileRoutes");
 const connectDB = require("./config/db");
 const authentication = require("./router/userAuth");
 const googleAuthRoutes = require("./router/googleAuthRouter");
@@ -29,7 +29,10 @@ app.use(cookieParser());
 app.use("/api/auth", authentication);
 app.use("/api/auth", googleAuthRoutes);
 app.use("/api/v1/market", marketRoutes);
+<<<<<<< HEAD
 app.use("/api/v1/companies", companyRoutes);
+=======
+>>>>>>> 83f3fcdbcd2e568dc4e45a801460238a6ed7f926
 app.use("/api/v1/profile", profileRoutes);
 
 app.get("/", (req, res) => {
