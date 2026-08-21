@@ -1,4 +1,4 @@
-const marketApi = require("../config/marketApi");
+const marketProvider = require("./providers/marketProvider");
 
 const { getCachedCompany, setCachedCompany } = require("./cacheService");
 
@@ -15,39 +15,19 @@ const getCompanyDetails = async (symbol) => {
     const cachedCompany = await getCachedCompany(normalizedSymbol);
 
     if (cachedCompany && cachedCompany.company && cachedCompany.market) {
-      console.log(`Company cache HIT: ${normalizedSymbol}`);
-
       return {
         symbol: normalizedSymbol,
-
         company: cachedCompany.company,
-
         market: cachedCompany.market,
-
         updatedAt: cachedCompany.cachedAt || new Date().toISOString(),
-
         source: "cache",
       };
     }
 
-    console.log(`Company cache MISS: ${normalizedSymbol}`);
-
-    const [quoteResponse, profileResponse] = await Promise.all([
-      marketApi.get("/quote", {
-        params: {
-          symbol: normalizedSymbol,
-        },
-      }),
-
-      marketApi.get("/stock/profile2", {
-        params: {
-          symbol: normalizedSymbol,
-        },
-      }),
+    const [quote, profile] = await Promise.all([
+      marketProvider.getQuote(normalizedSymbol),
+      marketProvider.getCompanyProfile(normalizedSymbol),
     ]);
-
-    const quote = quoteResponse.data;
-    const profile = profileResponse.data;
 
     if (!quote || typeof quote.c !== "number") {
       throw new Error(`No market data found for ${normalizedSymbol}`);
@@ -55,38 +35,24 @@ const getCompanyDetails = async (symbol) => {
 
     const company = {
       name: profile?.name || normalizedSymbol,
-
       ticker: profile?.ticker || normalizedSymbol,
-
       exchange: profile?.exchange || null,
-
       industry: profile?.finnhubIndustry || null,
-
       country: profile?.country || null,
-
       currency: profile?.currency || null,
-
       website: profile?.weburl || null,
-
       logo: profile?.logo || null,
     };
 
     const market = {
       currentPrice: quote.c,
-      change: quote.d,
-      changePercent: quote.dp,
-      high: quote.h,
-      low: quote.l,
-      open: quote.o,
-      previousClose: quote.pc,
-      timestamp: quote.t,
-    };
-
-    const result = {
-      symbol: normalizedSymbol,
-      company,
-      market,
-      updatedAt: new Date().toISOString(),
+      change: quote.d ?? null,
+      changePercent: quote.dp ?? null,
+      high: quote.h ?? null,
+      low: quote.l ?? null,
+      open: quote.o ?? null,
+      previousClose: quote.pc ?? null,
+      timestamp: quote.t ?? null,
     };
 
     await setCachedCompany(normalizedSymbol, {
@@ -95,7 +61,10 @@ const getCompanyDetails = async (symbol) => {
     });
 
     return {
-      ...result,
+      symbol: normalizedSymbol,
+      company,
+      market,
+      updatedAt: new Date().toISOString(),
       source: "external-api",
     };
   } catch (error) {
@@ -123,29 +92,15 @@ const getCompanyMetrics = async (symbol) => {
       cachedCompany.metrics &&
       Object.keys(cachedCompany.metrics).length > 0
     ) {
-      console.log(`Metrics cache HIT: ${normalizedSymbol}`);
-
       return {
         symbol: normalizedSymbol,
-
         metrics: cachedCompany.metrics,
-
         updatedAt: cachedCompany.cachedAt || new Date().toISOString(),
-
         source: "cache",
       };
     }
 
-    console.log(`Metrics cache MISS: ${normalizedSymbol}`);
-
-    const response = await marketApi.get("/stock/metric", {
-      params: {
-        symbol: normalizedSymbol,
-        metric: "all",
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.getCompanyMetrics(normalizedSymbol);
 
     if (!data) {
       throw new Error(`Metrics unavailable for ${normalizedSymbol}`);
@@ -155,23 +110,14 @@ const getCompanyMetrics = async (symbol) => {
 
     const metrics = {
       marketCapitalization: metric.marketCapitalization ?? null,
-
       peRatio: metric.peBasicExclExtraTTM ?? null,
-
       eps: metric.epsBasicExclExtraItemsTTM ?? null,
-
       dividendYield: metric.dividendYieldIndicatedAnnual ?? null,
-
       beta: metric.beta ?? null,
-
       fiftyTwoWeekHigh: metric["52WeekHigh"] ?? null,
-
       fiftyTwoWeekLow: metric["52WeekLow"] ?? null,
-
       fiftyTwoWeekPriceReturn: metric["52WeekPriceReturnDaily"] ?? null,
-
       tenDayAverageVolume: metric.tenDayAverageTradingVolume ?? null,
-
       threeMonthAverageVolume: metric.threeMonthAverageTradingVolume ?? null,
     };
 
@@ -181,11 +127,8 @@ const getCompanyMetrics = async (symbol) => {
 
     return {
       symbol: normalizedSymbol,
-
       metrics,
-
       updatedAt: new Date().toISOString(),
-
       source: "external-api",
     };
   } catch (error) {
@@ -210,16 +153,12 @@ const getCompanyHistory = async (symbol, resolution = "D", from, to) => {
 
     const normalizedSymbol = symbol.trim().toUpperCase();
 
-    const response = await marketApi.get("/stock/candle", {
-      params: {
-        symbol: normalizedSymbol,
-        resolution,
-        from,
-        to,
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.getHistoricalData(
+      normalizedSymbol,
+      resolution,
+      from,
+      to,
+    );
 
     if (!data || data.s !== "ok") {
       throw new Error(`Historical data unavailable for ${normalizedSymbol}`);
@@ -288,19 +227,15 @@ const getCompanyRisk = async (symbol) => {
 
     return {
       symbol: metricsData.symbol,
-
       risk: {
         ...risk,
-
         indicators: {
           volatility,
           beta,
           drawdown,
         },
       },
-
       generatedAt: new Date().toISOString(),
-
       source: metricsData.source,
     };
   } catch (error) {

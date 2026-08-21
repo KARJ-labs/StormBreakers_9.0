@@ -1,6 +1,6 @@
 const CompanyCache = require("../model/companyCache");
 
-const DEFAULT_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_CACHE_DURATION = 5 * 60 * 1000;
 
 const getCachedCompany = async (symbol) => {
   try {
@@ -25,7 +25,6 @@ const getCachedCompany = async (symbol) => {
   } catch (error) {
     console.error(`Cache read error for ${symbol}:`, error.message);
 
-    // Cache failure should not stop the application.
     return null;
   }
 };
@@ -52,15 +51,10 @@ const setCachedCompany = async (
 
     const cacheData = {
       symbol: normalizedSymbol,
-
       company: data.company || {},
-
       market: data.market || {},
-
       metrics: data.metrics || {},
-
       cachedAt: now,
-
       expiresAt,
     };
 
@@ -72,7 +66,7 @@ const setCachedCompany = async (
         $set: cacheData,
       },
       {
-        new: true,
+        returnDocument: "after",
         upsert: true,
         setDefaultsOnInsert: true,
       },
@@ -82,7 +76,6 @@ const setCachedCompany = async (
   } catch (error) {
     console.error(`Cache write error for ${symbol}:`, error.message);
 
-    // Cache failure should not break the API.
     return null;
   }
 };

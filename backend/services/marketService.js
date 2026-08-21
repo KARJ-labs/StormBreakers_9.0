@@ -1,4 +1,4 @@
-const marketApi = require("../config/marketApi");
+const marketProvider = require("./providers/marketProvider");
 
 const { getCachedCompany, setCachedCompany } = require("./cacheService");
 
@@ -31,13 +31,7 @@ const getQuote = async (symbol) => {
       };
     }
 
-    const response = await marketApi.get("/quote", {
-      params: {
-        symbol: normalizedSymbol,
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.getQuote(normalizedSymbol);
 
     if (!data || typeof data.c !== "number") {
       throw new Error(`No quote data found for ${normalizedSymbol}`);
@@ -105,13 +99,7 @@ const getMarketOverview = async () => {
 
 const getCompanies = async () => {
   try {
-    const response = await marketApi.get("/stock/symbol", {
-      params: {
-        exchange: "US",
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.getCompanies();
 
     if (!Array.isArray(data)) {
       throw new Error("Invalid company data received from market API");
@@ -175,13 +163,7 @@ const searchCompanies = async (query) => {
       throw new Error("Search query is required");
     }
 
-    const response = await marketApi.get("/search", {
-      params: {
-        q: query.trim(),
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.searchCompanies(query.trim());
 
     if (!data || !Array.isArray(data.result)) {
       return [];
@@ -215,16 +197,12 @@ const getHistoricalData = async (symbol, resolution = "D", from, to) => {
 
     const normalizedSymbol = symbol.trim().toUpperCase();
 
-    const response = await marketApi.get("/stock/candle", {
-      params: {
-        symbol: normalizedSymbol,
-        resolution,
-        from,
-        to,
-      },
-    });
-
-    const data = response.data;
+    const data = await marketProvider.getHistoricalData(
+      normalizedSymbol,
+      resolution,
+      from,
+      to,
+    );
 
     if (!data || data.s !== "ok") {
       throw new Error(`Historical data unavailable for ${normalizedSymbol}`);
