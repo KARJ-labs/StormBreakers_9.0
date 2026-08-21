@@ -15,6 +15,7 @@ const expenseRoutes = require("./router/expenseRoutes");
 const portfolioRoutes = require("./router/portfolioRoutes");
 const alertRoutes = require("./router/alertRouter");
 const dashboardRoutes = require("./router/dashboardRoutes");
+const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
@@ -53,13 +54,7 @@ app.use((req, res) => {
   });
 });
 
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err.stack);
-
-  res.status(500).json({
-    message: "Something went wrong on the server!",
-  });
-});
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

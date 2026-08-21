@@ -1,6 +1,9 @@
 const express = require("express");
 
 const authMiddleware = require("../middlewares/authorization");
+const validateRequest = require("../middlewares/validateRequest");
+
+const { validateCreateAlert } = require("../validators/alertValidator");
 
 const {
   createAlert,
@@ -12,7 +15,12 @@ const {
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createAlert);
+router.post(
+  "/",
+  authMiddleware,
+  validateRequest(validateCreateAlert),
+  createAlert,
+);
 
 router.get("/", authMiddleware, getAlerts);
 

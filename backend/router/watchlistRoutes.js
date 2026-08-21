@@ -1,6 +1,9 @@
 const express = require("express");
 
 const authMiddleware = require("../middlewares/authorization");
+const validateRequest = require("../middlewares/validateRequest");
+
+const { validateAddWatchlist } = require("../validators/watchlistValidator");
 
 const {
   addToWatchlist,
@@ -11,7 +14,12 @@ const {
 
 const router = express.Router();
 
-router.post("/", authMiddleware, addToWatchlist);
+router.post(
+  "/",
+  authMiddleware,
+  validateRequest(validateAddWatchlist),
+  addToWatchlist,
+);
 
 router.get("/", authMiddleware, getUserWatchlist);
 
