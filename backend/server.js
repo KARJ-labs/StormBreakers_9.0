@@ -12,6 +12,7 @@ const companyRoutes = require("./router/companyRoutes");
 const watchlistRoutes = require("./router/watchlistRoutes");
 const financialRoutes = require("./router/financialRoutes");
 const expenseRoutes = require("./router/expenseRoutes");
+const portfolioRoutes = require("./router/portfolioRoutes");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/watchlist", watchlistRoutes);
 app.use("/api/v1/financial-profile", financialRoutes);
 app.use("/api/v1/expenses", expenseRoutes);
+app.use("/api/v1/portfolio", portfolioRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
