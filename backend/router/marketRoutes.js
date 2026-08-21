@@ -1,26 +1,21 @@
 const express = require("express");
 
+const validateRequest = require("../middlewares/validateRequest");
+
+const {
+  validateSymbol,
+  validateOverview,
+} = require("../validators/marketValidator");
+
 const {
   getQuote,
   getMarketOverview,
-  getCompanies,
-  getTrending,
-  searchCompanies,
-  getHistoricalData,
 } = require("../controller/marketController");
 
 const router = express.Router();
 
-router.get("/quote/:symbol", getQuote);
+router.get("/quote/:symbol", validateRequest(validateSymbol), getQuote);
 
-router.get("/overview", getMarketOverview);
-
-router.get("/companies", getCompanies);
-
-router.get("/trending", getTrending);
-
-router.get("/search", searchCompanies);
-
-router.get("/history/:symbol", getHistoricalData);
+router.get("/overview", validateRequest(validateOverview), getMarketOverview);
 
 module.exports = router;

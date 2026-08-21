@@ -3,9 +3,19 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middlewares/authorization");
+const validateRequest = require("../middlewares/validateRequest");
+
+const {
+  validateRegister,
+  validateLogin,
+  validateForgotPassword,
+  validateResetPassword,
+} = require("../validators/authValidator");
 
 const {
   register,
+  varifyUser,
+  resendOtp,
   login,
   resetpassword,
   forgetpassword,
@@ -14,13 +24,22 @@ const {
   refreshToken,
 } = require("../controller/auth");
 
-router.post("/register", register);
+router.post("/login", validateRequest(validateLogin), login);
 
-router.post("/login", login);
+router.post("/register", validateRequest(validateRegister), register);
 
-router.post("/forgot-password", forgetpassword);
+router.post(
+  "/forgot-password",
+  validateRequest(validateForgotPassword),
+  forgetpassword,
+);
 
-router.post("/reset-password", authMiddleware, resetpassword);
+router.post(
+  "/reset-password",
+  authMiddleware,
+  validateRequest(validateResetPassword),
+  resetpassword,
+);
 
 router.post("/logout", authMiddleware, logout);
 
