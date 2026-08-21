@@ -15,6 +15,7 @@ const expenseRoutes = require("./router/expenseRoutes");
 const portfolioRoutes = require("./router/portfolioRoutes");
 const alertRoutes = require("./router/alertRouter");
 const dashboardRoutes = require("./router/dashboardRoutes");
+const goalRoutes = require("./router/goalRoutes");
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/v1/expenses", expenseRoutes);
 app.use("/api/v1/portfolio", portfolioRoutes);
 app.use("/api/v1/alerts", alertRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/goals", goalRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
