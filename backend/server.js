@@ -9,7 +9,8 @@ const authentication = require("./router/userAuth");
 const googleAuthRoutes = require("./router/googleAuthRouter");
 const marketRoutes = require("./router/marketRoutes");
 const companyRoutes = require("./router/companyRoutes");
-
+const financialRoutes = require("./router/financialRoutes");
+const expenseRoutes = require("./router/expenseRoutes");
 const app = express();
 
 const port = process.env.PORT || 5000;
@@ -30,6 +31,8 @@ app.use("/api/auth", googleAuthRoutes);
 app.use("/api/v1/market", marketRoutes);
 app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/profile", profileRoutes);
+app.use("/api/v1/financial-profile", financialRoutes);
+app.use("/api/v1/expenses", expenseRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
