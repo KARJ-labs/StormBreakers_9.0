@@ -1,5 +1,9 @@
 const express = require("express");
 
+const validateRequest = require("../middlewares/validateRequest");
+
+const { validateCompanySymbol } = require("../validators/companyValidator");
+
 const {
   getCompanyDetails,
   getCompanyMetrics,
@@ -9,12 +13,28 @@ const {
 
 const router = express.Router();
 
-router.get("/:symbol", getCompanyDetails);
+router.get(
+  "/:symbol",
+  validateRequest(validateCompanySymbol),
+  getCompanyDetails,
+);
 
-router.get("/:symbol/metrics", getCompanyMetrics);
+router.get(
+  "/:symbol/metrics",
+  validateRequest(validateCompanySymbol),
+  getCompanyMetrics,
+);
 
-router.get("/:symbol/history", getCompanyHistory);
+router.get(
+  "/:symbol/history",
+  validateRequest(validateCompanySymbol),
+  getCompanyHistory,
+);
 
-router.get("/:symbol/risk", getCompanyRisk);
+router.get(
+  "/:symbol/risk",
+  validateRequest(validateCompanySymbol),
+  getCompanyRisk,
+);
 
 module.exports = router;

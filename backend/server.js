@@ -17,14 +17,32 @@ const alertRoutes = require("./router/alertRouter");
 const dashboardRoutes = require("./router/dashboardRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 const goalRoutes = require("./router/goalRoutes");
+const helmet = require("helmet");
 
 const app = express();
+app.use(helmet());
 
 const port = process.env.PORT || 5000;
 
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : [];
+
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
