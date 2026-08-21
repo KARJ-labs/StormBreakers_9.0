@@ -19,6 +19,11 @@ const errorHandler = require("./middlewares/errorHandler");
 const goalRoutes = require("./router/goalRoutes");
 const financialHealthRoutes = require("./router/financialHealthRoutes");
 const helmet = require("helmet");
+<<<<<<< HEAD
+=======
+const investmentRoutes = require("./router/investmentRoutes");
+const interestRoutes = require("./router/interestRoutes");
+>>>>>>> 784efd8bca3715a2591e3faac06d5e0035f264c1
 
 const app = express();
 app.use(helmet());
@@ -65,6 +70,11 @@ app.use("/api/v1/alerts", alertRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/goals", goalRoutes);
 app.use("/api/v1/financial-health", financialHealthRoutes);
+<<<<<<< HEAD
+=======
+app.use("/api/v1/investments", investmentRoutes);
+app.use("/api/v1/interests", interestRoutes);
+>>>>>>> 784efd8bca3715a2591e3faac06d5e0035f264c1
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
