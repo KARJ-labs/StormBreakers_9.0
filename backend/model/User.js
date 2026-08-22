@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
 
     phonenumber: {
@@ -25,7 +24,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true,
-      index: true,
     },
 
     password: {
@@ -39,13 +37,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      index: true,
     },
 
     auth_provider: {
       type: String,
       enum: ["LOCAL", "GOOGLE"],
       default: "LOCAL",
+      required: true,
     },
 
     profile_picture: {
@@ -55,7 +53,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 const User = mongoose.model("User", userSchema);

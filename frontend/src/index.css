@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  background-color: #07090E;
+  color: #F1F5F9;
+  overflow-x: hidden;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(7, 9, 14, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.4);
+}
+
+/* Glassmorphism card utilities */
+.glass-card {
+  background: rgba(13, 19, 34, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.25s ease-in-out;
+}
+
+.glass-card-hover:hover {
+  background: rgba(19, 29, 49, 0.85);
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 12px 30px -10px rgba(0, 210, 255, 0.15);
+}
+
+/* Glowing text and borders */
+.text-glow-cyan {
+  text-shadow: 0 0 16px rgba(0, 210, 255, 0.6);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+}
+
+.text-glow-emerald {
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+}
+
+.text-glow-coral {
+  text-shadow: 0 0 16px rgba(244, 63, 94, 0.6);
+}
+
+/* Soft refined AI Orb glow pulse */
+@keyframes orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px 3px rgba(0, 210, 255, 0.2), inset 0 0 15px rgba(168, 85, 247, 0.25);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 30px 6px rgba(0, 210, 255, 0.3), inset 0 0 20px rgba(168, 85, 247, 0.35);
+  }
+}
+
+.animate-orb {
+  animation: orb-pulse 4s ease-in-out infinite;
+}
+
+/* Pipeline data flow animation */
+@keyframes pipelineFlow {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-pipeline {
+  stroke-dasharray: 6 6;
+  animation: pipelineFlow 1.8s linear infinite;
+}
+
+/* Shimmer skeleton animation */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.12) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite;
+  content: '';
+}
+
+/* Smooth left-to-right fade in animations */
+@keyframes textFadeSlideLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes textFadeSlideRight {
+  0% {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Continuous smooth left-to-right floating glide */
+@keyframes textSmoothGlide {
+  0% {
+    transform: translateX(-10px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-10px);
+    opacity: 0.9;
+  }
+}
+
+.animate-fade-slide-left {
+  animation: textFadeSlideLeft 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-slide-right {
+  animation: textFadeSlideRight 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-glide-smooth {
+  animation: textSmoothGlide 7s ease-in-out infinite;
+}
+
+/* Subtle continuous horizontal slide for background ticker cards */
+@keyframes backgroundSlideSlow {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-slide-track {
+  display: flex;
+  width: max-content;
+  animation: backgroundSlideSlow 35s linear infinite;
+}
+
+.animate-slide-track:hover {
+  animation-play-state: paused;
+}
+
+/* Floating ambient blob animation */
+@keyframes floatAmbient {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(20px, -15px) scale(1.08);
+  }
+  66% {
+    transform: translate(-15px, 12px) scale(0.95);
+  }
+}
+
+.animate-float-blob {
+  animation: floatAmbient 10s ease-in-out infinite;
+}
