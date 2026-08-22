@@ -21,6 +21,7 @@ const financialHealthRoutes = require("./router/financialHealthRoutes");
 const helmet = require("helmet");
 const investmentRoutes = require("./router/investmentRoutes");
 const interestRoutes = require("./router/interestRoutes");
+const companyAnalyzerRoutes = require("./router/companyAnalyzerRoutes");
 
 const app = express();
 app.use(helmet());
@@ -69,6 +70,7 @@ app.use("/api/v1/goals", goalRoutes);
 app.use("/api/v1/financial-health", financialHealthRoutes);
 app.use("/api/v1/investments", investmentRoutes);
 app.use("/api/v1/interests", interestRoutes);
+app.use("/api/v1/company-analyzer", companyAnalyzerRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
