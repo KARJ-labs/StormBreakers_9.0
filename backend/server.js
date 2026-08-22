@@ -72,6 +72,7 @@ app.use("/api/v1/investments", investmentRoutes);
 app.use("/api/v1/interests", interestRoutes);
 app.use("/api/v1/company-analyzer", companyAnalyzerRoutes);
 
+
 app.get("/", (req, res) => {
   res.status(200).send("hello from server");
 });
