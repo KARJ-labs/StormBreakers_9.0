@@ -12,7 +12,7 @@ export const ragApi = {
 
   checkRagHealth: async () => {
     try {
-      const res = await backend2.get('/rith');
+      const res = await backend2.get('/health');
       return res.data;
     } catch {
       return { status: 'offline', service: 'rag-fastapi' };
