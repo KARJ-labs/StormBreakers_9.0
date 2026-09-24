@@ -55,32 +55,53 @@ def _verify_service_signature(raw_body: bytes, signature: str | None) -> None:
         raise HTTPException(status_code=401, detail="Invalid service signature")
 
 
+# @router.post("/chat", response_model=ChatResponse)
+# async def chat(
+#     request: Request,
+#     payload: ChatRequest,
+#     x_service_signature: str | None = Header(default=None),
+# ) -> ChatResponse:
+#     request_start = time.perf_counter()
+
+#     raw_body = await request.body()
+#     print(raw_body)
+#     _verify_service_signature(raw_body, x_service_signature)
+
+#     try:
+#         rag_start = time.perf_counter()
+
+#         result = answer_question(payload.message)
+#         print(result)
+
+#         rag_time = time.perf_counter() - rag_start
+#         print(f"RAG pipeline time: {rag_time:.3f}s")
+
+#     except Exception as exc:  # noqa: BLE001
+#         logger.exception("Unhandled error while processing chat request")
+#         raise HTTPException(
+#             status_code=500,
+#             detail="Internal error while generating a response",
+#         ) from exc
+
+#     return ChatResponse(answer=result["answer"])
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: Request,
     payload: ChatRequest,
     x_service_signature: str | None = Header(default=None),
 ) -> ChatResponse:
-    request_start = time.perf_counter()
 
     raw_body = await request.body()
     print(raw_body)
+
     _verify_service_signature(raw_body, x_service_signature)
 
-    try:
-        rag_start = time.perf_counter()
-
-        result = answer_question(payload.message)
-        print(result)
-
-        rag_time = time.perf_counter() - rag_start
-        print(f"RAG pipeline time: {rag_time:.3f}s")
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unhandled error while processing chat request")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal error while generating a response",
-        ) from exc
-
-    return ChatResponse(answer=result["answer"])
+    return ChatResponse(
+        answer=(
+            "Admin has brought me down due to heavy requests to our model. "
+            "By the way, we won CodeFury 9.0! 🏆 "
+            "We'll be back up again for CodeFury 10.0."
+        )
+    )
